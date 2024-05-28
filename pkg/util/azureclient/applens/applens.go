@@ -5,10 +5,6 @@ package applens
 
 import (
 	"context"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-
-	"github.com/Azure/ARO-RP/pkg/util/azureclient"
 )
 
 // AppLensClient is a minimal interface for azure AppLensClient
@@ -19,19 +15,4 @@ type AppLensClient interface {
 
 type appLensClient struct {
 	*Client
-}
-
-var _ AppLensClient = &appLensClient{}
-
-// NewAppLensClient returns a new AppLensClient
-func NewAppLensClient(env *azureclient.AROEnvironment, cred azcore.TokenCredential) (AppLensClient, error) {
-	client, err := NewClient(env.AppLensEndpoint, env.PkiIssuerUrlTemplate, env.PkiCaName, env.AppLensScope, cred, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &appLensClient{
-		Client: client,
-	}, nil
 }

@@ -7,18 +7,13 @@ package applens
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-
-	"github.com/Azure/ARO-RP/pkg/util/pki"
 )
 
 // AppLens client is used to interact with the Azure AppLens service.
@@ -37,54 +32,6 @@ type ResponseMessageEnvelope struct {
 
 type ResponseMessageCollectionEnvelope struct {
 	Value []ResponseMessageEnvelope `json:"value,omitempty"`
-}
-
-// Endpoint used to create the client.
-func (c *Client) Endpoint() string {
-	return c.endpoint
-}
-
-// NewClient creates a new instance of AppLens client with Azure AD access token authentication. It uses the default pipeline configuration.
-// endpoint - The AppLens service endpoint to use.
-// issuerUrlTemplate - The URL template to fetch the certs used by AppLens example: https://issuer.pki.azure.com/dsms/issuercertificates?getissuersv3&caName=%s
-// caName - Is the certificate authority used by AppLens example: ame
-// cred - The credential used to authenticate with the AppLens service.
-// options - Optional AppLens client options.  Pass nil to accept default values.
-func NewClient(endpoint, issuerUrlTemplate, caName, scope string, cred azcore.TokenCredential, o *ClientOptions) (*Client, error) {
-	pipeline, err := newPipeline([]policy.Policy{runtime.NewBearerTokenPolicy(cred, []string{fmt.Sprintf("%s/.default", scope)}, nil)}, o, issuerUrlTemplate, caName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{endpoint: endpoint, pipeline: *pipeline}, nil
-}
-
-func newPipeline(authPolicy []policy.Policy, options *ClientOptions, issuerUrlTemplate, caName string) (*runtime.Pipeline, error) {
-	var cp *x509.CertPool = nil
-	var err error = nil
-	if options == nil {
-		// if provided pki info fetch the correct cert pool
-		// otherwise use the default of nil
-		if issuerUrlTemplate != "" && caName != "" {
-			cp, err = pki.GetTlsCertPool(issuerUrlTemplate, caName)
-			if err != nil {
-				return nil, err
-			}
-		}
-		options = NewClientOptions(cp)
-	}
-
-	runtimePipeline := runtime.NewPipeline(
-		"applens", serviceLibVersion,
-		runtime.PipelineOptions{
-			PerCall:  []policy.Policy{},
-			PerRetry: authPolicy,
-		},
-		&options.ClientOptions,
-	)
-
-	return &runtimePipeline, nil
 }
 
 // ListDetectors obtains the list of detectors for a service from AppLens.
